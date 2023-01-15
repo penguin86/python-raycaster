@@ -48,13 +48,14 @@ TEXTURES = [
 TEXTURE_SIZE = 64
 
 # Raycast cfg
-RAYCAST_WIN_WIDTH = 1024
-RAYCAST_WIN_HEIGHT = 1024
-RAYCAST_RENDER_WIDTH = int(RAYCAST_WIN_WIDTH / 4)
-RAYCAST_RENDER_HEIGHT = int(RAYCAST_WIN_HEIGHT / 4)
+RAYCAST_WIN_WIDTH = 1000
+RAYCAST_WIN_HEIGHT = 1000
+RAYCAST_RENDER_MULTIPLIER = 4
+RAYCAST_RENDER_WIDTH = int(RAYCAST_WIN_WIDTH / RAYCAST_RENDER_MULTIPLIER)
+RAYCAST_RENDER_HEIGHT = int(RAYCAST_WIN_HEIGHT / RAYCAST_RENDER_MULTIPLIER)
 DOF = 2*MAP_SIZE	# Depth Of Field
-CEILING_COLOR = sdl2.ext.Color(0,128,255,255)
-FLOOR_COLOR = sdl2.ext.Color(64,64,64,255)
+CEILING_COLOR = [0,128,255]
+FLOOR_COLOR = [64,64,64]
 
 # Player cfg
 PLAYER_SPEED = 8
@@ -119,10 +120,9 @@ class Main:
 			self.mapWindow.show()
 			self.mapSurface = self.mapWindow.get_surface()
 
-		self.raycastWindow = sdl2.ext.Window("3D View", size=(RAYCAST_WIN_WIDTH, RAYCAST_WIN_HEIGHT))
-		self.raycastWindow.show()
-		self.raycastSurface = self.raycastWindow.get_surface()
-		self.raycast_u32_pixels = ctypes.cast(self.raycastSurface.pixels, ctypes.POINTER(ctypes.c_uint32))	# Raw SDL surface pixel array
+		self.raycastWindow = sdl2.SDL_CreateWindow(b"3D View", 100, 100, RAYCAST_WIN_WIDTH, RAYCAST_WIN_HEIGHT,sdl2.SDL_WINDOW_SHOWN)
+		self.raycastRenderer = sdl2.SDL_CreateRenderer(self.raycastWindow, -1,sdl2.SDL_RENDERER_ACCELERATED |sdl2.SDL_RENDERER_PRESENTVSYNC)
+		self.raycastSurface = sdl2.SDL_CreateRGBSurface(0,RAYCAST_WIN_WIDTH,RAYCAST_WIN_HEIGHT,32,0,0,0,0)
 
 		# Player
 		self.player_position = {"x": int(MAP_SCALE * PLAYER_SPAWN_POSITION["x"]), "y": int(MAP_SCALE * PLAYER_SPAWN_POSITION["y"]), "r": PLAYER_SPAWN_POSITION["r"]}	# r is rotation in radiants
@@ -179,7 +179,7 @@ class Main:
 			self.draw()
 			if not MAP_HIDDEN:
 				self.mapWindow.refresh()
-			self.raycastWindow.refresh()
+			#self.raycastWindow.refresh()
 
 			# Calculate FPS
 			frames = frames + 1
@@ -214,7 +214,9 @@ class Main:
 		if not MAP_HIDDEN:
 			self.draw2Dmap()
 			self.drawPlayer()
+
 		self.drawRays()
+		sdl2.SDL_RenderPresent(self.raycastRenderer)
 
 	def drawPlayer(self):
 		# Player in 2D map
@@ -239,8 +241,12 @@ class Main:
 			sdl2.ext.draw.fill(self.mapSurface, sdl2.ext.Color(color,color,color,255), (posX, posY, MAP_SCALE - 1, MAP_SCALE - 1))
 
 	def drawRays(self):
-		sdl2.ext.draw.fill(self.raycastSurface, CEILING_COLOR, (0, 0, RAYCAST_WIN_WIDTH, RAYCAST_WIN_HEIGHT/2)) # Clears upper raycast screen (draws ceiling)
-		sdl2.ext.draw.fill(self.raycastSurface, FLOOR_COLOR, (0, RAYCAST_WIN_HEIGHT/2, RAYCAST_WIN_WIDTH, RAYCAST_WIN_HEIGHT/2)) # Clears upper raycast screen (draws floor)
+		# Ceiling
+		sdl2.SDL_SetRenderDrawColor(self.raycastRenderer, CEILING_COLOR[0], CEILING_COLOR[1], CEILING_COLOR[2], sdl2.SDL_ALPHA_OPAQUE)
+		sdl2.SDL_RenderClear(self.raycastRenderer)
+		# Floor
+		sdl2.SDL_SetRenderDrawColor(self.raycastRenderer, FLOOR_COLOR[0], FLOOR_COLOR[1], FLOOR_COLOR[2], sdl2.SDL_ALPHA_OPAQUE)
+		sdl2.SDL_RenderFillRect(self.raycastRenderer, sdl2.SDL_Rect(0, int(RAYCAST_WIN_HEIGHT/2), RAYCAST_WIN_WIDTH, int(RAYCAST_WIN_HEIGHT)))
 
 		# Casts rays for raycasting
 		playerAngle = self.player_position["r"]
@@ -394,12 +400,15 @@ class Main:
 					continue
 
 				# Draw segment (all is scaled x4)
-				x = i * 4
-				for idx in range(int(lineStart * 4) * RAYCAST_WIN_WIDTH + x, int(lineEnd * 4) * RAYCAST_WIN_WIDTH + x, RAYCAST_WIN_WIDTH):
-					self.raycast_u32_pixels[idx] = color
-					self.raycast_u32_pixels[idx + 1] = color
-					self.raycast_u32_pixels[idx + 2] = color
-					self.raycast_u32_pixels[idx + 3] = color
+
+				b = color & 0b000000000000000011111111
+				g = color >> 8 & 0b000000000000000011111111
+				r = color >> 16 & 0b000000000000000011111111
+				sdl2.SDL_SetRenderDrawColor(self.raycastRenderer, r, g, b, sdl2.SDL_ALPHA_OPAQUE) # Non fare in tutti i cicli
+
+				x = i * RAYCAST_RENDER_MULTIPLIER
+				#sdl2.SDL_RenderFillRect(self.raycastRenderer, sdl2.SDL_Rect(x, int(lineStart * RAYCAST_RENDER_MULTIPLIER), RAYCAST_RENDER_MULTIPLIER, int((lineEnd - lineStart) * RAYCAST_RENDER_MULTIPLIER) + 1))
+				sdl2.SDL_RenderFillRectF(self.raycastRenderer, sdl2.SDL_FRect(x, lineStart * RAYCAST_RENDER_MULTIPLIER, RAYCAST_RENDER_MULTIPLIER, (lineEnd - lineStart) * RAYCAST_RENDER_MULTIPLIER))
 
 	def shade(self, color):
 		# Obtain channels

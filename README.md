@@ -3,6 +3,10 @@
 A simple [raycasting engine](https://en.wikipedia.org/wiki/Ray_casting), like the one used for [Wolfenstein 3D](https://en.wikipedia.org/wiki/Wolfenstein_3D), written in Python using the [SDL graphics library](https://en.wikipedia.org/wiki/Simple_DirectMedia_Layer).
 Inspired by [this video of 3DSage](https://www.youtube.com/watch?v=gYRrGTC7GtA)
 
+![Screenshot](images/screenshot.png)
+
+![Screenshot](images/screenshot2.png)
+
 ## Requirements
 Install SDL libs for Python and PNG lib (required for texture loading):
 ```
