@@ -1,5 +1,8 @@
 # Python raycaster
 
+> This project was moved to [my private git server](https://git.ichibi.eu/penguin86/raycaster) . This repository may not be up to date.
+> This is a personal project, probably of little use for others, and I don't currently accept contributions on it. Anyway, feel free to contact me if you have any idea.
+
 A simple [raycasting engine](https://en.wikipedia.org/wiki/Ray_casting), like the one used for [Wolfenstein 3D](https://en.wikipedia.org/wiki/Wolfenstein_3D), written in Python using the [SDL graphics library](https://en.wikipedia.org/wiki/Simple_DirectMedia_Layer).
 Inspired by [this video of 3DSage](https://www.youtube.com/watch?v=gYRrGTC7GtA)
 
